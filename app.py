@@ -9,12 +9,16 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
+import io
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
+from PIL import Image
+
 
 load_dotenv()
 os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# read all pdf files and return text
 
 
 def get_pdf_text(pdf_docs):
@@ -54,19 +58,22 @@ def get_conversational_chain():
     Answer:
     """
 
-    model = ChatGoogleGenerativeAI(model="gemini-pro",
-                                   client=genai,
-                                   temperature=0.3,
-                                   )
-    prompt = PromptTemplate(template=prompt_template,
-                            input_variables=["context", "question"])
+    model = ChatGoogleGenerativeAI(
+        model="gemini-pro",
+        client=genai,
+        temperature=0.3,
+    )
+    prompt = PromptTemplate(
+        template=prompt_template,
+        input_variables=["context", "question"]
+    )
     chain = load_qa_chain(llm=model, chain_type="stuff", prompt=prompt)
     return chain
 
 
 def clear_chat_history():
     st.session_state.messages = [
-        {"role": "assistant", "content": "upload some pdfs and ask me a question"}]
+        {"role": "assistant", "content": "upload some Docs and ask me a question"}]
 
 
 def user_input(user_question):
@@ -87,21 +94,54 @@ def user_input(user_question):
 
 def main():
     st.set_page_config(
-        page_title="Gemini PDF Chatbot",
+        page_title="Gen AI Chatbot",
         page_icon="🎉"
     )
 
     # Sidebar
     with st.sidebar:
         st.title("Menu:")
-        pdf_docs = st.file_uploader(
-            "Upload your PDF Files and Click on the Submit & Process Button", accept_multiple_files=True)
-        if st.button("Submit & Process"):
-            with st.spinner("Processing..."):
-                raw_text = get_pdf_text(pdf_docs)
-                text_chunks = get_text_chunks(raw_text)
-                get_vector_store(text_chunks)
-                st.success("Done")
+        uploaded_files = st.file_uploader("Upload PDF or PNG files", type=["pdf","png"], accept_multiple_files=True)
+
+        if 'documents_text' not in st.session_state:
+            st.session_state['documents_text'] = []
+
+        if st.button("Submit & Process Files"):
+            if uploaded_files:
+                for uploaded_file in uploaded_files:
+                    file_type = uploaded_file.type
+                    if file_type == "application/pdf":
+                        pdf_io = io.BytesIO(uploaded_file.read())
+                        pdf_io.seek(0)
+                        reader = PdfReader(pdf_io)
+                        text_content = ""
+                        for page in reader.pages:
+                            text_content += page.extract_text()
+                        st.session_state['documents_text'].append(text_content)
+                        text_chunks = get_text_chunks(text_content)
+                        get_vector_store(text_chunks)
+                        st.success("Done")
+                    elif file_type in ["image/png","image/jpeg"]:
+                        try:
+                            img_bytes = uploaded_file.read()
+                            img = Image.open(io.BytesIO(img_bytes))
+                            extracted_text = pytesseract.image_to_string(img)
+                            st.session_state['documents_text'].append(extracted_text)
+                            text_chunks = get_text_chunks(extracted_text)
+                            get_vector_store(text_chunks)
+                            st.success("Done")
+                        except pytesseract.TesseractNotFoundError:
+                            st.error("Tesseract not installed or not in PATH.")
+                    else:
+                        st.error("Unsupported file format.")
+                st.write("All files processed successfully.")
+            else:
+                st.error("No files uploaded.")
+        
+        if st.button("Start New Chat"):
+            st.session_state['documents_text'] = []
+            st.write("Chat cleared. Previous context removed.")
+
 
     # Main content
     st.title("GenAI-Chatbot")
@@ -112,7 +152,7 @@ def main():
 
     if "messages" not in st.session_state.keys():
         st.session_state.messages = [
-            {"role": "assistant", "content": "upload some pdfs and ask me a question"}]
+            {"role": "assistant", "content": "upload some Docs and ask me a question"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
