@@ -1,6 +1,16 @@
 ## GenAI-Chatbot
-
 Chat with the Document
+
+GenAI-Chatbot is a Streamlit-based application that allows users to upload PDF and PNG files, process the text content, and interact with a generative AI model to ask questions about the uploaded documents.
+
+## Features
+
+- **Upload PDF and PNG files**: Users can upload multiple PDF and PNG files.
+- **Text Extraction**: Extracts text from PDF files and images using PyPDF2 and pytesseract.
+- **Text Chunking**: Splits extracted text into manageable chunks using `RecursiveCharacterTextSplitter`.
+- **Vector Store**: Stores text chunks as vectors using `FAISS` and `GoogleGenerativeAIEmbeddings`.
+- **Conversational AI**: Uses `ChatGoogleGenerativeAI` to answer questions based on the uploaded documents.
+- **Clear Chat**: Allows users to clear the chat history and reset the context.
 
 <h3> Tech Stack Used <img src="https://media2.giphy.com/media/QssGEmpkyEOhBCb7e1/giphy.gif?cid=ecf05e47a0n3gi1bfqntqmob8g9aid1oyj2wr3ds3mg700bl&rid=giphy.gif" width="32px"> </h3>
 <p align="left">
@@ -15,10 +25,22 @@ Chat with the Document
   </a>
 </p>
 
-- PyPDF2
-- langchain
-- Streamlit
-- google.generativeai
+## Dependencies
+
+- [Streamlit](https://streamlit.io/)
+- [PyPDF2](https://pypdf2.readthedocs.io/)
+- [pytesseract](https://github.com/madmaze/pytesseract)
+- [FAISS](https://github.com/facebookresearch/faiss)
+- [Google Generative AI](https://developers.google.com/generative-ai)
+- `langchain_google_genai`
+- `langchain`
+- `Pillow`
+- `python-dotenv`
+
+### Preview
+
+![Preview](./GenAIChatBotScreenRecording.gif)
+=======
 
 ## Local Development
 
@@ -39,6 +61,15 @@ Chat with the Document
    ```bash
    pip install -r requirements.txt
    ```
+  Using pytesseract
+  - Ubuntu
+    `sudo-apt install tesseract-ocr`
+   ```
+    pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
+   ```
+  - Windows
+    - [Download](https://github.com/tesseract-ocr/tesseract/releases/)
+    - Set Environment Variable &rarr; System Variable &rarr; Path &rarr; `C:\Program Files\Tesseract-OCR`
 
 2. **Set up Google API Key:**
    - You can get Google Api key [from Here](https://aistudio.google.com/app/apikey) </br>
@@ -54,8 +85,3 @@ Chat with the Document
    ```bash
    streamlit run app.py
    ```
-
-<!-- ### Preview
-
-![](./screenrecord-gen-ai chat.gif)
-======= -->
